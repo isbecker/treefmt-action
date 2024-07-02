@@ -1,0 +1,18 @@
+name: "treefmt GitHub Action"
+description: "Installs and runs treefmt on your repository"
+author: "Your Name"
+inputs:
+  version:
+    description: "The version of treefmt to install"
+    required: false
+    default: "latest"
+  github_token:
+    description: "GitHub token for accessing the API"
+    required: true
+  config-file:
+    description: "Path to the treefmt configuration file"
+    required: false
+    default: "treefmt.toml"
+runs:
+  using: "node16"
+  main: "dist/main.js"

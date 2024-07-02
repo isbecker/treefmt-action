@@ -1,0 +1,32 @@
+{
+  "name": "treefmt-action",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/isbecker/treefmt-action.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/isbecker/treefmt-action/issues"
+  },
+  "homepage": "https://github.com/isbecker/treefmt-action#readme",
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "typescript": "^5.5.3"
+  },
+  "dependencies": {
+    "@actions/core": "^1.10.1",
+    "@actions/exec": "^1.1.1",
+    "@actions/github": "^6.0.0",
+    "@actions/tool-cache": "^2.0.1",
+    "@octokit/rest": "^21.0.0"
+  }
+}
