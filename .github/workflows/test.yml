@@ -1,0 +1,17 @@
+name: Test treefmt Action
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: biomejs/setup-biome@v2.2.1
+      - uses: uncenter/setup-taplo@v1.0.8
+      - name: Run treefmt Action
+        uses: ./  # Uses the action from the same repository
+        with:
+          version: 'latest'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          fail_on_change: 'true'

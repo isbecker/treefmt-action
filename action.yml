@@ -1,18 +1,58 @@
 name: "treefmt GitHub Action"
 description: "Installs and runs treefmt on your repository"
-author: "Your Name"
+author: "Ian Becker"
 inputs:
   version:
-    description: "The version of treefmt to install"
+    description: 'The version of treefmt to install'
     required: false
-    default: "latest"
+    default: 'latest'
   github_token:
-    description: "GitHub token for accessing the API"
+    description: 'GitHub token for accessing the API'
     required: true
-  config-file:
-    description: "Path to the treefmt configuration file"
+  config_file:
+    description: 'Path to the treefmt configuration file'
     required: false
-    default: "treefmt.toml"
+    default: 'treefmt.toml'
+  allow_missing_formatter:
+    description: 'Do not exit with error if a configured formatter is missing'
+    required: false
+    default: 'false'
+  working_directory:
+    description: 'Run as if treefmt was started in the specified working directory instead of the current working directory'
+    required: false
+    default: '.'
+  no_cache:
+    description: 'Ignore the evaluation cache entirely. Useful for CI'
+    required: false
+    default: 'false'
+  fail_on_change:
+    description: 'Exit with error if any changes were made. Useful for CI'
+    required: false
+    default: 'true'
+  formatters:
+    description: 'Specify formatters to apply. Defaults to all formatters'
+    required: false
+    default: ''
+  tree_root:
+    description: 'The root directory from which treefmt will start walking the filesystem'
+    required: false
+    default: ''
+  tree_root_file:
+    description: 'File to search for to find the project root (if --tree_root is not passed)'
+    required: false
+    default: ''
+  walk:
+    description: "The method used to traverse the files within --tree_root. Supports 'auto', 'git' or 'filesystem'"
+    required: false
+    default: 'auto'
+  verbose:
+    description: 'Set the verbosity of logs'
+    required: false
+    default: 'false'
+  on_unmatched:
+    description: 'Log paths that did not match any formatters at the specified log level'
+    required: false
+    default: 'warn'
 runs:
-  using: "node16"
-  main: "dist/main.js"
+  using: "node20"
+  main: "dist/index.js"
