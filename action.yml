@@ -1,58 +1,61 @@
 name: "treefmt GitHub Action"
 description: "Installs and runs treefmt on your repository"
 author: "Ian Becker"
+branding:
+  icon: "align-justify"
+  color: "orange"
 inputs:
   version:
-    description: 'The version of treefmt to install'
+    description: "The version of treefmt to install"
     required: false
-    default: 'latest'
+    default: "latest"
   github_token:
-    description: 'GitHub token for accessing the API'
+    description: "GitHub token for accessing the API"
     required: true
   config_file:
-    description: 'Path to the treefmt configuration file'
+    description: "Path to the treefmt configuration file"
     required: false
-    default: 'treefmt.toml'
+    default: "treefmt.toml"
   allow_missing_formatter:
-    description: 'Do not exit with error if a configured formatter is missing'
+    description: "Do not exit with error if a configured formatter is missing"
     required: false
-    default: 'false'
+    default: "false"
   working_directory:
-    description: 'Run as if treefmt was started in the specified working directory instead of the current working directory'
+    description: "Run as if treefmt was started in the specified working directory instead of the current working directory"
     required: false
-    default: '.'
+    default: "."
   no_cache:
-    description: 'Ignore the evaluation cache entirely. Useful for CI'
+    description: "Ignore the evaluation cache entirely. Useful for CI"
     required: false
-    default: 'false'
+    default: "false"
   fail_on_change:
-    description: 'Exit with error if any changes were made. Useful for CI'
+    description: "Exit with error if any changes were made. Useful for CI"
     required: false
-    default: 'true'
+    default: "true"
   formatters:
-    description: 'Specify formatters to apply. Defaults to all formatters'
+    description: "Specify formatters to apply. Defaults to all formatters"
     required: false
-    default: ''
+    default: ""
   tree_root:
-    description: 'The root directory from which treefmt will start walking the filesystem'
+    description: "The root directory from which treefmt will start walking the filesystem"
     required: false
-    default: ''
+    default: ""
   tree_root_file:
-    description: 'File to search for to find the project root (if --tree_root is not passed)'
+    description: "File to search for to find the project root (if --tree_root is not passed)"
     required: false
-    default: ''
+    default: ""
   walk:
     description: "The method used to traverse the files within --tree_root. Supports 'auto', 'git' or 'filesystem'"
     required: false
-    default: 'auto'
+    default: "auto"
   verbose:
-    description: 'Set the verbosity of logs'
+    description: "Set the verbosity of logs"
     required: false
-    default: 'false'
+    default: "false"
   on_unmatched:
-    description: 'Log paths that did not match any formatters at the specified log level'
+    description: "Log paths that did not match any formatters at the specified log level"
     required: false
-    default: 'warn'
+    default: "warn"
 runs:
   using: "node20"
   main: "dist/index.js"
