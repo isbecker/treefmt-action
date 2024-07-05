@@ -1,5 +1,5 @@
 {
-  description = "VSCode extension for treefmt";
+  description = "GitHub action for treefmt";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -22,7 +22,7 @@
         packages.default = pkgs.git;
 
         devenv.shells.default = {
-          name = "treefmt-vscode";
+          name = "treefmt-action";
 
           dotenv = {
             enable = true;
