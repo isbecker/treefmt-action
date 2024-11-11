@@ -58,6 +58,7 @@ async function run() {
 				arch,
 			);
 			ensureExecutable(platform, cachedPath);
+			core.addPath(cachedPath);
 		}
 
 		const treefmtArgs = constructArgs({

@@ -33659,6 +33659,7 @@ function run() {
                 const downloadUrl = yield getDownloadUrl(octokit, version, filename, latest);
                 const cachedPath = yield downloadAndCacheTreefmt(downloadUrl, platform, version, arch);
                 ensureExecutable(platform, cachedPath);
+                core.addPath(cachedPath);
             }
             const treefmtArgs = constructArgs({
                 configFile,
