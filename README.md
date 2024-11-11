@@ -32,7 +32,7 @@ jobs:
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         version: 'latest'
-        fail_on_change: 'true'
+        ci: true
 ```
 
 Note that you need to set up the formatters you want to use before running `treefmt`.

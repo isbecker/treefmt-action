@@ -1,27 +1,3 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -31,99 +7,183 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-const core = __importStar(require("@actions/core"));
-const exec = __importStar(require("@actions/exec"));
-const rest_1 = require("@octokit/rest");
-const fs = __importStar(require("fs"));
-const path = __importStar(require("path"));
-const tc = __importStar(require("@actions/tool-cache"));
+import * as core from "@actions/core";
+import * as exec from "@actions/exec";
+import * as tc from "@actions/tool-cache";
+import { Octokit } from "@octokit/rest";
+import * as fs from "fs";
+import * as path from "path";
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            // Get the inputs
-            const inputVersion = core.getInput('version') || 'latest';
-            const configFile = core.getInput('config-file') || 'treefmt.toml';
-            // Determine the platform and architecture
+            const inputVersion = core.getInput("version") || "latest";
+            const configFile = core.getInput("config_file") || "treefmt.toml";
+            const token = core.getInput("github_token");
+            const allowMissingFormatter = core.getInput("allow_missing_formatter") === "true";
+            const workingDir = core.getInput("working_dir");
+            const noCache = core.getInput("no_cache") === "true";
+            const failOnChange = core.getInput("fail_on_change") === "true";
+            const formatters = core.getInput("formatters");
+            const treeRoot = core.getInput("tree_root");
+            const treeRootFile = core.getInput("tree_root_file");
+            const walk = core.getInput("walk") || "auto";
+            const verbose = core.getInput("verbose") || "0";
+            const onUnmatched = core.getInput("on_unmatched") || "warn";
+            const ci = core.getInput("ci") === "true";
+            const clearCache = core.getInput("clear_cache") === "true";
+            const excludes = core.getInput("excludes");
+            const stdin = core.getInput("stdin") === "true";
+            const init = core.getInput("init") === "true";
             const platform = process.platform;
-            let arch = process.arch;
-            const token = core.getInput('github_token');
-            const octokit = new rest_1.Octokit({ auth: token });
+            const arch = process.arch;
+            const octokit = new Octokit({ auth: token });
             let version = inputVersion;
-            let latest = false;
-            let filename = '';
-            if (platform === 'win32') {
-                switch (arch) {
-                    case 'x64':
-                        filename = 'treefmt-x86_64-pc-windows-msvc.zip';
-                        break;
-                    case 'arm64':
-                        filename = 'treefmt-aarch64-pc-windows-msvc.zip';
-                        break;
-                    default:
-                        throw new Error(`Unsupported platform/arch combination: ${platform}-${arch}`);
-                }
-                version = 'v0.6.1';
-                latest = false;
-            }
-            else {
-                switch (`${platform}-${arch}`) {
-                    case 'linux-x64':
-                        filename = `treefmt_${inputVersion}_linux_amd64.tar.gz`;
-                        break;
-                    case 'linux-arm64':
-                        filename = `treefmt_${inputVersion}_linux_${arch}.tar.gz`;
-                        break;
-                    case 'darwin-x64':
-                        filename = `treefmt_${inputVersion}_darwin_amd64.tar.gz`;
-                        break;
-                    case 'darwin-arm64':
-                        filename = `treefmt_${inputVersion}_darwin_${arch}.tar.gz`;
-                        break;
-                    default:
-                        throw new Error(`Unsupported platform/arch combination: ${platform}-${arch}`);
-                }
-                latest = inputVersion === 'latest';
-                version = inputVersion;
-            }
-            // Fetch the release
-            let release;
+            let latest = inputVersion === "latest";
+            let filename = getFilename(platform, arch, version);
             if (latest) {
-                release = yield octokit.rest.repos.getLatestRelease({ owner: 'numtide', repo: 'treefmt' });
-                version = release.data.tag_name;
-                filename = filename.replace('latest', version);
+                const release = yield getLatestRelease(octokit);
+                version = release.data.tag_name.replace("v", "");
+                filename = filename.replace("latest", version);
+            }
+            const toolPath = tc.find("treefmt", version, arch);
+            if (toolPath) {
+                core.addPath(toolPath);
             }
             else {
-                release = yield octokit.rest.repos.getReleaseByTag({ owner: 'numtide', repo: 'treefmt', tag: version });
+                const downloadUrl = yield getDownloadUrl(octokit, version, filename, latest);
+                const cachedPath = yield downloadAndCacheTreefmt(downloadUrl, platform, version, arch);
+                ensureExecutable(platform, cachedPath);
             }
-            const asset = release.data.assets.find(a => a.name === filename);
-            if (!asset) {
-                throw new Error(`Asset not found: ${filename}`);
-            }
-            const downloadUrl = asset.browser_download_url;
-            // Download and extract treefmt
-            const downloadPath = yield tc.downloadTool(downloadUrl);
-            let extractedPath;
-            if (platform === 'win32') {
-                extractedPath = yield tc.extractZip(downloadPath);
-            }
-            else {
-                extractedPath = yield tc.extractTar(downloadPath);
-            }
-            // Add the binary to PATH
-            const cachedPath = yield tc.cacheDir(extractedPath, 'treefmt', version, arch);
-            core.addPath(cachedPath);
-            // Make sure the binary is executable on Unix-like systems
-            if (platform !== 'win32') {
-                const treefmtPath = path.join(cachedPath, 'treefmt');
-                fs.chmodSync(treefmtPath, '755');
-            }
-            // Run treefmt
-            yield exec.exec(`treefmt --config-file=${configFile}`);
+            const treefmtArgs = constructArgs({
+                configFile,
+                allowMissingFormatter,
+                workingDir,
+                noCache,
+                failOnChange,
+                formatters,
+                treeRoot,
+                treeRootFile,
+                walk,
+                verbose,
+                onUnmatched,
+                ci,
+                clearCache,
+                excludes,
+                stdin,
+                init,
+            });
+            yield exec.exec("treefmt", treefmtArgs);
         }
         catch (error) {
-            core.setFailed(error.message);
+            core.setFailed(`Action failed with error: ${error.message}`);
         }
     });
+}
+function getFilename(platform, arch, version) {
+    if (platform === "win32") {
+        if (arch === "x64") {
+            return "treefmt-x86_64-pc-windows-msvc.zip";
+        }
+        else if (arch === "arm64") {
+            return "treefmt-aarch64-pc-windows-msvc.zip";
+        }
+        else {
+            throw new Error(`Unsupported platform/arch combination: ${platform}-${arch}`);
+        }
+    }
+    else {
+        switch (`${platform}-${arch}`) {
+            case "linux-x64":
+                return `treefmt_${version}_linux_amd64.tar.gz`;
+            case "linux-arm64":
+                return `treefmt_${version}_linux_${arch}.tar.gz`;
+            case "darwin-x64":
+                return `treefmt_${version}_darwin_amd64.tar.gz`;
+            case "darwin-arm64":
+                return `treefmt_${version}_darwin_${arch}.tar.gz`;
+            default:
+                throw new Error(`Unsupported platform/arch combination: ${platform}-${arch}`);
+        }
+    }
+}
+function getLatestRelease(octokit) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return yield octokit.rest.repos.getLatestRelease({
+            owner: "numtide",
+            repo: "treefmt",
+        });
+    });
+}
+function getDownloadUrl(octokit, version, filename, latest) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let release;
+        if (latest) {
+            release = yield getLatestRelease(octokit);
+            version = release.data.tag_name.replace("v", "");
+            filename = filename.replace("latest", version);
+        }
+        else {
+            release = yield octokit.rest.repos.getReleaseByTag({
+                owner: "numtide",
+                repo: "treefmt",
+                tag: version,
+            });
+        }
+        const asset = release.data.assets.find((a) => a.name === filename);
+        if (!asset) {
+            throw new Error(`Asset not found: ${filename}`);
+        }
+        return asset.browser_download_url;
+    });
+}
+function downloadAndCacheTreefmt(downloadUrl, platform, version, arch) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const downloadPath = yield tc.downloadTool(downloadUrl);
+        const extractedPath = platform === "win32"
+            ? yield tc.extractZip(downloadPath)
+            : yield tc.extractTar(downloadPath);
+        return yield tc.cacheDir(extractedPath, "treefmt", version, arch);
+    });
+}
+function ensureExecutable(platform, cachedPath) {
+    if (platform !== "win32") {
+        const treefmtPath = path.join(cachedPath, "treefmt");
+        fs.chmodSync(treefmtPath, "755");
+    }
+}
+function constructArgs(options) {
+    const args = ["--config-file", options.configFile];
+    if (options.allowMissingFormatter)
+        args.push("--allow-missing-formatter");
+    if (options.workingDir)
+        args.push("-C", options.workingDir);
+    if (options.noCache)
+        args.push("--no-cache");
+    if (options.failOnChange)
+        args.push("--fail-on-change");
+    if (options.formatters)
+        args.push("--formatters", options.formatters);
+    if (options.treeRoot)
+        args.push("--tree-root", options.treeRoot);
+    if (options.treeRootFile)
+        args.push("--tree-root-file", options.treeRootFile);
+    if (options.walk)
+        args.push("--walk", options.walk);
+    if (options.verbose && Number(options.verbose) > 0) {
+        args.push("-" + "v".repeat(Number(options.verbose)));
+    }
+    if (options.onUnmatched)
+        args.push("--on-unmatched", options.onUnmatched);
+    if (options.ci)
+        args.push("--ci");
+    if (options.clearCache)
+        args.push("--clear-cache");
+    if (options.excludes)
+        args.push("--excludes", options.excludes);
+    if (options.stdin)
+        args.push("--stdin");
+    if (options.init)
+        args.push("--init");
+    return args;
 }
 run();
