@@ -12,15 +12,20 @@ async function run() {
 		const token = core.getInput("github_token");
 		const allowMissingFormatter =
 			core.getInput("allow_missing_formatter") === "true";
-		const workingDirectory = core.getInput("working_directory") || ".";
+		const workingDir = core.getInput("working_dir");
 		const noCache = core.getInput("no_cache") === "true";
 		const failOnChange = core.getInput("fail_on_change") === "true";
 		const formatters = core.getInput("formatters");
 		const treeRoot = core.getInput("tree_root");
 		const treeRootFile = core.getInput("tree_root_file");
 		const walk = core.getInput("walk") || "auto";
-		const verbose = core.getInput("verbose") === "true";
+		const verbose = core.getInput("verbose") || "0";
 		const onUnmatched = core.getInput("on_unmatched") || "warn";
+		const ci = core.getInput("ci") === "true";
+		const clearCache = core.getInput("clear_cache") === "true";
+		const excludes = core.getInput("excludes");
+		const stdin = core.getInput("stdin") === "true";
+		const init = core.getInput("init") === "true";
 
 		const platform = process.platform;
 		const arch = process.arch;
@@ -52,14 +57,14 @@ async function run() {
 				version,
 				arch,
 			);
-			core.addPath(cachedPath);
 			ensureExecutable(platform, cachedPath);
+			core.addPath(cachedPath);
 		}
 
 		const treefmtArgs = constructArgs({
 			configFile,
 			allowMissingFormatter,
-			workingDirectory,
+			workingDir,
 			noCache,
 			failOnChange,
 			formatters,
@@ -68,12 +73,14 @@ async function run() {
 			walk,
 			verbose,
 			onUnmatched,
+			ci,
+			clearCache,
+			excludes,
+			stdin,
+			init,
 		});
 
-		const exitCode = await exec.exec("treefmt", treefmtArgs);
-		if (exitCode !== 0) {
-			throw new Error(`treefmt failed with exit code ${exitCode}`);
-		}
+		await exec.exec("treefmt", treefmtArgs);
 	} catch (error: any) {
 		core.setFailed(`Action failed with error: ${error.message}`);
 	}
@@ -166,28 +173,39 @@ function ensureExecutable(platform: string, cachedPath: string) {
 function constructArgs(options: {
 	configFile: string;
 	allowMissingFormatter: boolean;
-	workingDirectory: string;
+	workingDir: string;
 	noCache: boolean;
 	failOnChange: boolean;
 	formatters?: string;
 	treeRoot?: string;
 	treeRootFile?: string;
 	walk: string;
-	verbose: boolean;
+	verbose: string;
 	onUnmatched: string;
+	ci: boolean;
+	clearCache: boolean;
+	excludes?: string;
+	stdin: boolean;
+	init: boolean;
 }): string[] {
 	const args = ["--config-file", options.configFile];
 	if (options.allowMissingFormatter) args.push("--allow-missing-formatter");
-	if (options.workingDirectory)
-		args.push("--working-directory", options.workingDirectory);
+	if (options.workingDir) args.push("-C", options.workingDir);
 	if (options.noCache) args.push("--no-cache");
 	if (options.failOnChange) args.push("--fail-on-change");
 	if (options.formatters) args.push("--formatters", options.formatters);
 	if (options.treeRoot) args.push("--tree-root", options.treeRoot);
 	if (options.treeRootFile) args.push("--tree-root-file", options.treeRootFile);
 	if (options.walk) args.push("--walk", options.walk);
-	if (options.verbose) args.push("--vv");
+	if (options.verbose && Number(options.verbose) > 0) {
+		args.push("-" + "v".repeat(Number(options.verbose)));
+	}
 	if (options.onUnmatched) args.push("--on-unmatched", options.onUnmatched);
+	if (options.ci) args.push("--ci");
+	if (options.clearCache) args.push("--clear-cache");
+	if (options.excludes) args.push("--excludes", options.excludes);
+	if (options.stdin) args.push("--stdin");
+	if (options.init) args.push("--init");
 	return args;
 }
 

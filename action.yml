@@ -20,10 +20,14 @@ inputs:
     description: "Do not exit with error if a configured formatter is missing"
     required: false
     default: "false"
-  working_directory:
+  working_dir:
     description: "Run as if treefmt was started in the specified working directory instead of the current working directory"
     required: false
     default: "."
+  ci:
+    description: "Runs treefmt in a CI mode, enabling --no-cache, --fail-on-change and adjusting some other settings best suited to a CI use case"
+    required: false
+    default: "false"
   no_cache:
     description: "Ignore the evaluation cache entirely. Useful for CI"
     required: false
@@ -51,11 +55,31 @@ inputs:
   verbose:
     description: "Set the verbosity of logs"
     required: false
-    default: "false"
+    default: "0"
   on_unmatched:
     description: "Log paths that did not match any formatters at the specified log level"
     required: false
     default: "warn"
+  clear_cache:
+    description: "Reset the evaluation cache. Use in case the cache is not precise enough"
+    required: false
+    default: "false"
+  cpu_profile:
+    description: "The file into which a CPU profile will be written"
+    required: false
+    default: ""
+  excludes:
+    description: "Exclude files or directories matching the specified globs"
+    required: false
+    default: ""
+  stdin:
+    description: "Format the context passed in via stdin"
+    required: false
+    default: "false"
+  init:
+    description: "Create a treefmt.toml file in the current directory"
+    required: false
+    default: "false"
 runs:
   using: "node20"
   main: "dist/index.js"

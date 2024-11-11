@@ -14,4 +14,4 @@ jobs:
         with:
           version: 'latest'
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          fail_on_change: 'true'
+          ci: true
