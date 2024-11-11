@@ -38,13 +38,11 @@ async function run() {
 		if (latest) {
 			const release = await getLatestRelease(octokit);
 			version = release.data.tag_name.replace("v", "");
-			filename = filename.replace("latest", version);
+			filename = getFilename(platform, arch, version);
 		}
 
-		const toolPath = tc.find("treefmt", version, arch);
-		if (toolPath) {
-			core.addPath(toolPath);
-		} else {
+		let toolPath = tc.find("treefmt", version, arch);
+		if (!toolPath) {
 			const downloadUrl = await getDownloadUrl(
 				octokit,
 				version,
@@ -59,7 +57,9 @@ async function run() {
 			);
 			ensureExecutable(platform, cachedPath);
 			core.addPath(cachedPath);
+			toolPath = cachedPath;
 		}
+		core.addPath(toolPath);
 
 		const treefmtArgs = constructArgs({
 			configFile,
@@ -132,12 +132,12 @@ async function getDownloadUrl(
 	if (latest) {
 		release = await getLatestRelease(octokit);
 		version = release.data.tag_name.replace("v", "");
-		filename = filename.replace("latest", version);
+		filename = getFilename(process.platform, process.arch, version);
 	} else {
 		release = await octokit.rest.repos.getReleaseByTag({
 			owner: "numtide",
 			repo: "treefmt",
-			tag: version,
+			tag: `v${version}`,
 		});
 	}
 

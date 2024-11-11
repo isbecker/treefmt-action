@@ -15,3 +15,136 @@ jobs:
           version: 'latest'
           github_token: ${{ secrets.GITHUB_TOKEN }}
           ci: true
+
+  version_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: biomejs/setup-biome@v2.2.1
+      - uses: uncenter/setup-taplo@v1.0.8
+      - name: Run treefmt Action
+        uses: ./
+        with:
+          version: '2.1.0'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          ci: true
+
+  config_file_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: biomejs/setup-biome@v2.2.1
+      - uses: uncenter/setup-taplo@v1.0.8
+      - name: Run treefmt with custom config file
+        uses: ./
+        with:
+          config_file: treefmt.toml
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  allow_missing_formatter_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: biomejs/setup-biome@v2.2.1
+      - uses: uncenter/setup-taplo@v1.0.8
+      - name: Allow missing formatters
+        uses: ./
+        with:
+          allow_missing_formatter: 'true'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  working_dir_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: biomejs/setup-biome@v2.2.1
+      - uses: uncenter/setup-taplo@v1.0.8
+      - name: Run in specific working directory
+        uses: ./
+        with:
+          working_dir: '.'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  no_cache_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: biomejs/setup-biome@v2.2.1
+      - uses: uncenter/setup-taplo@v1.0.8
+      - name: Disable cache
+        uses: ./
+        with:
+          no_cache: 'true'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  fail_on_change_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: biomejs/setup-biome@v2.2.1
+      - uses: uncenter/setup-taplo@v1.0.8
+      - name: Do not fail on change
+        uses: ./
+        with:
+          fail_on_change: 'false'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  formatters_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: biomejs/setup-biome@v2.2.1
+      - uses: uncenter/setup-taplo@v1.0.8
+      - name: Run specific formatters
+        uses: ./
+        with:
+          formatters: 'typescript,toml'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  verbose_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: biomejs/setup-biome@v2.2.1
+      - uses: uncenter/setup-taplo@v1.0.8
+      - name: Increase verbosity
+        uses: ./
+        with:
+          verbose: '2'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  clear_cache_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: biomejs/setup-biome@v2.2.1
+      - uses: uncenter/setup-taplo@v1.0.8
+      - name: Clear cache before run
+        uses: ./
+        with:
+          clear_cache: 'true'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  excludes_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: biomejs/setup-biome@v2.2.1
+      - uses: uncenter/setup-taplo@v1.0.8
+      - name: Exclude certain paths
+        uses: ./
+        with:
+          excludes: 'docs/**,tests/**'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  init_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: biomejs/setup-biome@v2.2.1
+      - uses: uncenter/setup-taplo@v1.0.8
+      - name: Initialize treefmt configuration
+        uses: ./
+        with:
+          init: 'true'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
