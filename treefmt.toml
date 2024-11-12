@@ -1,3 +1,8 @@
+allow-missing-formatter = true
+formatters = ["typescript", "toml"]
+on-unmatched = "info"
+
+
 [formatter.typescript]
 command = "biome"
 options = ["format", "--write", "--no-errors-on-unmatched"]
@@ -7,4 +12,4 @@ excludes = ["dist/*", "node_modules/*"]
 [formatter.toml]
 command = "taplo"
 options = ["fmt"]
-includes = ["*.toml", "*.editorconfig"]
+includes = ["*.toml"]
