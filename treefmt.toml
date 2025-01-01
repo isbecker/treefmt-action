@@ -1,15 +1,32 @@
 allow-missing-formatter = true
-formatters = ["typescript", "toml"]
-on-unmatched = "info"
+formatters              = ["typescript", "toml", "nix", "markdown"]
+on-unmatched            = "info"
 
 
 [formatter.typescript]
-command = "biome"
-options = ["format", "--write", "--no-errors-on-unmatched"]
-includes = ["*.ts", "*.json"]
+command  = "biome"
+options  = ["format", "--write", "--no-errors-on-unmatched"]
+includes = ["*.ts", "*.json", "*.js", "*.jsx", "*.tsx"]
 excludes = ["dist/*", "node_modules/*"]
 
 [formatter.toml]
 command = "taplo"
-options = ["fmt"]
+options = [
+  "fmt",
+  "-oalign_entries=true",
+  "-oalign_comments=true",
+  "-oarray_trailing_comma=true",
+  "-oarray_auto_expand=true",
+  "-oarray_auto_collapse=true",
+  "-oindent_tables=false",
+  "-oindent_entries=false",
+]
 includes = ["*.toml"]
+
+[formatter.nix]
+command  = "nixpkgs-fmt"
+includes = ["*.nix"]
+
+[formatter.markdown]
+command  = "mdformat"
+includes = ["*.md"]
