@@ -4,6 +4,14 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     devenv.url = "github:cachix/devenv";
+    treefmt-nix.url = "github:numtide/treefmt-nix";
+
+    nix2container = {
+      url = "github:nlewo/nix2container";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    mk-shell-bin.url = "github:rrbutani/nix-mk-shell-bin";
+
   };
 
   nixConfig = {
@@ -15,14 +23,73 @@
     flake-parts.lib.mkFlake { inherit inputs; } {
       imports = [
         inputs.devenv.flakeModule
+        inputs.treefmt-nix.flakeModule
+
       ];
       systems = [ "x86_64-linux" "i686-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
 
       perSystem = { config, self', inputs', pkgs, system, lib, ... }: {
         packages.default = pkgs.git;
 
+        treefmt = {
+          # Used to find the project root
+          projectRootFile = "flake.nix";
+
+          programs = {
+            nixpkgs-fmt = {
+              enable = true;
+              package = pkgs.nixpkgs-fmt;
+            };
+            biome = {
+              enable = true;
+              package = pkgs.biome;
+            };
+            mdformat = {
+              enable = true;
+              package = pkgs.mdformat;
+            };
+            taplo = {
+              enable = true;
+              package = pkgs.taplo;
+            };
+          };
+          settings.formatter = {
+            nix = {
+              command = "nixpkgs-fmt";
+              includes = [ "*.nix" ];
+            };
+            typescript = {
+              command = "biome";
+              options = [ "format" "--write" "--no-errors-on-unmatched" ];
+              includes = [ "*.ts" "*.json" "*.js" "*.jsx" "*.tsx" ];
+              excludes = [ "dist/*" "node_modules/*" ];
+            };
+            toml = {
+              command = "taplo";
+              options = [
+                "fmt"
+                "-oalign_entries=true"
+                "-oalign_comments=true"
+                "-oarray_trailing_comma=true"
+                "-oarray_auto_expand=true"
+                "-oarray_auto_collapse=true"
+                "-oindent_tables=false"
+                "-oindent_entries=false"
+              ];
+              includes = [ "*.toml" ];
+            };
+            markdown = {
+              command = "mdformat";
+              includes = [ "*.md" ];
+            };
+
+          };
+        };
+
         devenv.shells.default = {
           name = "treefmt-action";
+
+          devcontainer.enable = true;
 
           dotenv = {
             enable = true;
@@ -55,10 +122,11 @@
             };
           };
 
-          packages = [
+          packages = with pkgs; [
+
             config.packages.default
-            pkgs.just
-            pkgs.direnv
+            act
+
           ];
         };
       };
