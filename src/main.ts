@@ -4,73 +4,75 @@ import * as github from "@actions/github";
 import * as tc from "@actions/tool-cache";
 import * as fs from "fs";
 import * as path from "path";
+import semver from "semver";
 
 class ActionInputs {
-	version: string;
-	configFile: string;
-	githubToken: string;
-	allowMissingFormatter: boolean;
-	workingDir: string;
-	noCache: boolean;
-	failOnChange: boolean;
-	formatters: string;
-	treeRoot: string;
-	treeRootFile: string;
-	walk: string;
-	verbose: string;
-	onUnmatched: string;
-	ci: boolean;
-	clearCache: boolean;
-	excludes: string;
-	stdin: boolean;
-	init: boolean;
+	version: string | undefined;
+	githubToken: string | undefined;
+	configFile: string | undefined;
+	allowMissingFormatter: boolean | undefined;
+	workingDir: string | undefined;
+	noCache: boolean | undefined;
+	failOnChange: boolean | undefined;
+	formatters: string | undefined;
+	treeRoot: string | undefined;
+	treeRootFile: string | undefined;
+	walk: string | undefined;
+	verbose: string | undefined;
+	onUnmatched: string | undefined;
+	ci: boolean | undefined;
+	clearCache: boolean | undefined;
+	excludes: string | undefined;
+	stdin: boolean | undefined;
+	init: boolean | undefined;
 
 	constructor() {
-		this.version = this.inputOrDefault("version", "latest") as string;
-		this.configFile = this.inputOrDefault(
-			"config_file",
-			"treefmt.toml",
-		) as string;
-		this.githubToken = this.inputOrDefault("github_token") as string;
-		this.allowMissingFormatter = this.inputOrDefault(
-			"allow_missing_formatter",
-		) as boolean;
-		this.workingDir = this.inputOrDefault("working_dir") as string;
-		this.noCache = this.inputOrDefault("no_cache") as boolean;
-		this.failOnChange = this.inputOrDefault("fail_on_change") as boolean;
-		this.formatters = this.inputOrDefault("formatters") as string;
-		this.treeRoot = this.inputOrDefault("tree_root") as string;
-		this.treeRootFile = this.inputOrDefault("tree_root_file") as string;
-		this.walk = this.inputOrDefault("walk", "auto") as string;
-		this.verbose = this.inputOrDefault("verbose", "0") as string;
-		this.onUnmatched = this.inputOrDefault("on_unmatched", "warn") as string;
-		this.ci = this.inputOrDefault("ci") as boolean;
-		this.clearCache = this.inputOrDefault("clear_cache") as boolean;
-		this.excludes = this.inputOrDefault("excludes") as string;
-		this.stdin = this.inputOrDefault("stdin") as boolean;
-		this.init = this.inputOrDefault("init") as boolean;
+		// required inputs
+		this.version = this.getRaw("version");
+		this.githubToken = this.getRaw("github-token");
+
+		// optional inputs
+		this.configFile = this.getRaw("config-file");
+		this.allowMissingFormatter = this.getBool("allow-missing-formatter");
+		this.workingDir = this.getRaw("working-dir");
+		this.noCache = this.getBool("no-cache");
+		this.failOnChange = this.getBool("fail-on-change");
+		this.formatters = this.getRaw("formatters");
+		this.treeRoot = this.getRaw("tree-root");
+		this.treeRootFile = this.getRaw("tree-root-file");
+		this.walk = this.getRaw("walk");
+		this.verbose = this.getRaw("verbose");
+		this.onUnmatched = this.getRaw("on-unmatched");
+		this.ci = this.getBool("ci");
+		this.clearCache = this.getBool("clear-cache");
+		this.excludes = this.getRaw("excludes");
 	}
 
-	private inputOrDefault<T extends string | boolean>(
-		name: string,
-		defaultValue?: T,
-	): T {
-		const value = core.getInput(name);
-		if (value === "") {
-			return defaultValue!;
-		}
-		if (value === "true") {
-			return true as T;
-		} else if (value === "false") {
-			return false as T;
-		}
-		return value as T;
-	}
+	getRaw = (name: string): string | undefined => {
+		const v = core.getInput(name, { trimWhitespace: true });
+		return v === "" ? undefined : v;
+	};
+
+	getBool = (name: string): boolean | undefined => {
+		const v = this.getRaw(name);
+		if (v === undefined) return undefined;
+		if (/^(true|True|TRUE)$/.test(v)) return true;
+		if (/^(false|False|FALSE)$/.test(v)) return false;
+		throw new Error(`Invalid boolean for "${name}": ${v}`);
+	};
 }
 
 async function run() {
 	try {
 		const inputs = new ActionInputs();
+		if (!inputs.githubToken) {
+			core.setFailed("GitHub token is required.");
+			return;
+		}
+		if (!inputs.version) {
+			core.setFailed("Version is required.");
+			return;
+		}
 		const platform = process.platform;
 		const arch = process.arch;
 		const octokit: ReturnType<typeof github.getOctokit> = github.getOctokit(
@@ -78,33 +80,54 @@ async function run() {
 		);
 
 		let version = inputs.version;
-		let latest = inputs.version === "latest";
-		let filename = getFilename(platform, arch, version);
+		const requestedLatest = version === "latest";
+		const requestedSystem = version === "system";
+		let useSystemTreefmt = false;
+		const existingTreefmtVersion = await detectTreefmtVersion();
 
-		if (latest) {
-			const release = await getLatestRelease(octokit);
-			version = release.data.tag_name.replace("v", "");
-			filename = getFilename(platform, arch, version);
+		if (requestedSystem) {
+			if (existingTreefmtVersion) {
+				core.info(`Using treefmt ${existingTreefmtVersion} found in PATH.`);
+				useSystemTreefmt = true;
+				version = existingTreefmtVersion;
+			} else {
+				core.warning(
+					"Requested to use system treefmt, but none was found in PATH. Falling back to installation with latest version.",
+				);
+				useSystemTreefmt = false;
+				version = "latest";
+			}
 		}
 
-		let toolPath = tc.find("treefmt", version, arch);
-		if (!toolPath) {
-			const downloadUrl = await getDownloadUrl(
-				octokit,
-				version,
-				filename,
-				latest,
-			);
-			const cachedPath = await downloadAndCacheTreefmt(
-				downloadUrl,
-				platform,
-				version,
-				arch,
-			);
-			ensureExecutable(platform, cachedPath);
-			toolPath = cachedPath;
+		if (!useSystemTreefmt) {
+			let resolvedVersion = semver.coerce(version || "")?.version || null;
+			if (requestedLatest) {
+				const release = await getLatestRelease(octokit);
+				resolvedVersion = semver.coerce(release.data.tag_name)?.version || null;
+			}
+			if (!resolvedVersion) {
+				throw new Error("Could not resolve treefmt version to install.");
+			}
+			const filename = getFilename(platform, arch, resolvedVersion);
+			let toolPath = tc.find("treefmt", resolvedVersion, arch);
+			if (!toolPath) {
+				const downloadUrl = await getDownloadUrl(
+					octokit,
+					resolvedVersion,
+					filename,
+					requestedLatest,
+				);
+				const cachedPath = await downloadAndCacheTreefmt(
+					downloadUrl,
+					platform,
+					resolvedVersion,
+					arch,
+				);
+				ensureExecutable(platform, cachedPath);
+				toolPath = cachedPath;
+			}
+			core.addPath(toolPath);
 		}
-		core.addPath(toolPath);
 
 		const treefmtArgs = constructArgs(inputs);
 
@@ -164,7 +187,7 @@ async function getDownloadUrl(
 	>;
 	if (latest) {
 		release = await getLatestRelease(octokit);
-		version = release.data.tag_name.replace("v", "");
+		version = semver.coerce(release.data.tag_name)?.version || version;
 		filename = getFilename(process.platform, process.arch, version);
 	} else {
 		release = await octokit.rest.repos.getReleaseByTag({
@@ -221,9 +244,28 @@ function constructArgs(inputs: ActionInputs): string[] {
 	if (inputs.ci) args.push("--ci");
 	if (inputs.clearCache) args.push("--clear-cache");
 	if (inputs.excludes) args.push("--excludes", inputs.excludes);
-	if (inputs.stdin) args.push("--stdin");
-	if (inputs.init) args.push("--init");
 	return args;
+}
+
+async function detectTreefmtVersion(): Promise<string | null> {
+	try {
+		const result = await exec.getExecOutput("treefmt", ["--version"], {
+			ignoreReturnCode: true,
+			silent: true,
+		});
+		if (result.exitCode !== 0) {
+			return null;
+		}
+		const stdout = result.stdout.trim();
+		if (!stdout) {
+			return null;
+		}
+		const match = semver.coerce(stdout);
+		return match ? match.version : null;
+	} catch (error) {
+		core.debug(`Failed to detect existing treefmt: ${String(error)}`);
+		return null;
+	}
 }
 
 run();

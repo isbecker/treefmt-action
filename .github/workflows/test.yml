@@ -1,70 +1,96 @@
 name: Test treefmt Action
-
-on: [push]
-
+on:
+- push
 jobs:
   test:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        arch: [x86_64, arm64]
+        os:
+        - ubuntu-latest
+        - macos-latest
+        arch:
+        - x86_64
+        - arm64
         test-case:
-          - name: 'Default settings'
-            version: 'latest'
-            ci: 'true'
-          - name: 'Specify version 2.1.0'
-            version: '2.1.0'
-            ci: 'true'
-          - name: 'Custom config file'
-            config_file: 'treefmt.toml'
-          - name: 'Allow missing formatters'
-            allow_missing_formatter: 'true'
-          - name: 'Run in specific working directory'
-            working_dir: '.'
-          - name: 'Disable cache'
-            no_cache: 'true'
-          - name: 'Do not fail on change'
-            fail_on_change: 'false'
-          - name: 'Run specific formatters'
-            formatters: 'typescript,toml'
-          - name: 'Increase verbosity'
-            verbose: '2'
-          - name: 'Clear cache before run'
-            clear_cache: 'true'
-          - name: 'Exclude certain paths'
-            excludes: 'docs/**,tests/**'
-          - name: 'Initialize treefmt configuration'
-            init: 'true'
+        - name: Default settings
+          # technically should not need to specify version here since latest is default
+          # however, because the matrix specifies version always, if we leave it out
+          # the action will give an error about a missing input
+          # however, users can leave version out to get the default behavior
+          version: latest
+          ci: true
+        - name: Use system treefmt if available
+          version: system
+          ci: true
+        - name: Specify version 2.4.0
+          version: "2.4.0"
+          ci: true
+        - name: Custom config file
+          # has to specify version here since matrix always specifies version
+          version: latest
+          config-file: .treefmt.toml
+        - name: Allow missing formatters
+          version: system
+          allow-missing-formatter: true
+        - name: Run in specific working directory
+          version: system
+          working-dir: .
+        - name: Disable cache
+          version: system
+          no-cache: true
+        - name: Do not fail on change
+          version: system
+          fail-on-change: false
+        - name: Run specific formatters
+          version: system
+          formatters: biome,taplo
+        - name: Increase verbosity
+          version: system
+          verbose: "2"
+        - name: Clear cache before run
+          version: system
+          clear-cache: true
+        - name: Exclude certain paths
+          version: system
+          excludes: docs/**,tests/**
     name: ${{ matrix.test-case.name }} on ${{ matrix.os }} ${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: biomejs/setup-biome@v2.2.1
-      - uses: uncenter/setup-taplo@v1.0.8
-      - name: Run treefmt Action
-        uses: ./
-        with:
-          version: ${{ matrix.test-case.version }}
-          config_file: ${{ matrix.test-case.config_file }}
-          allow_missing_formatter: ${{ matrix.test-case.allow_missing_formatter }}
-          working_dir: ${{ matrix.test-case.working_dir }}
-          no_cache: ${{ matrix.test-case.no_cache }}
-          fail_on_change: ${{ matrix.test-case.fail_on_change }}
-          formatters: ${{ matrix.test-case.formatters }}
-          verbose: ${{ matrix.test-case.verbose }}
-          clear_cache: ${{ matrix.test-case.clear_cache }}
-          excludes: ${{ matrix.test-case.excludes }}
-          init: ${{ matrix.test-case.init }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+    - uses: actions/checkout@v6
+    - uses: DeterminateSystems/nix-installer-action@v21
+    - uses: DeterminateSystems/magic-nix-cache-action@v13
+      with:
+        use-flakehub: false
+        use-gha-cache: true
+    - name: Install formatting tools
+      shell: bash
+      run: |
+        eval "$(nix print-dev-env --no-pure-eval --accept-flake-config .#ci)"
+        echo "PATH=$PATH" >> "$GITHUB_ENV"
+    - name: Run treefmt Action
+      uses: ./
+      with:
+        version: ${{ matrix.test-case.version }}
+        ci: ${{ matrix.test-case.ci }}
+        config-file: ${{ matrix.test-case.config-file }}
+        allow-missing-formatter: ${{ matrix.test-case.allow-missing-formatter }}
+        working-dir: ${{ matrix.test-case.working-dir }}
+        no-cache: ${{ matrix.test-case.no-cache }}
+        fail-on-change: ${{ matrix.test-case.fail-on-change }}
+        formatters: ${{ matrix.test-case.formatters }}
+        verbose: ${{ matrix.test-case.verbose }}
+        clear-cache: ${{ matrix.test-case.clear-cache }}
+        excludes: ${{ matrix.test-case.excludes }}
+        init: ${{ matrix.test-case.init }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
   marketplace-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: biomejs/setup-biome@v2.2.1
-      - uses: uncenter/setup-taplo@v1.0.8
-      - name: Run treefmt Action from Marketplace
-        uses: isbecker/treefmt-action@v1.3.0
-        with:
-          version: 'latest'
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          ci: 'true'
+    - uses: actions/checkout@v2
+    - uses: biomejs/setup-biome@v2.2.1
+    - uses: uncenter/setup-taplo@v1.0.8
+    - name: Run treefmt Action from Marketplace
+      uses: isbecker/treefmt-action@v1.3.0
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        ci: true

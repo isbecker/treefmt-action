@@ -24,48 +24,28 @@
       imports = [
         inputs.devenv.flakeModule
         inputs.treefmt-nix.flakeModule
-
       ];
       systems = [ "x86_64-linux" "i686-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
 
       perSystem = { config, self', inputs', pkgs, system, lib, ... }: {
-        packages.default = pkgs.git;
 
         treefmt = {
           # Used to find the project root
           projectRootFile = "flake.nix";
 
           programs = {
-            nixpkgs-fmt = {
-              enable = true;
-              package = pkgs.nixpkgs-fmt;
-            };
+            nixpkgs-fmt.enable = true;
             biome = {
               enable = true;
-              package = pkgs.biome;
-            };
-            mdformat = {
-              enable = true;
-              package = pkgs.mdformat;
-            };
-            taplo = {
-              enable = true;
-              package = pkgs.taplo;
-            };
-          };
-          settings.formatter = {
-            nix = {
-              command = "nixpkgs-fmt";
-              includes = [ "*.nix" ];
-            };
-            typescript = {
-              command = "biome";
-              options = [ "format" "--write" "--no-errors-on-unmatched" ];
-              includes = [ "*.ts" "*.json" "*.js" "*.jsx" "*.tsx" ];
               excludes = [ "dist/*" "node_modules/*" ];
             };
-            toml = {
-              command = "taplo";
+            mdformat.enable = true;
+            taplo.enable = true;
+            yamlfmt.enable = true;
+            just.enable = true;
+          };
+          settings.formatter = {
+            taplo = {
               options = [
                 "fmt"
                 "-oalign_entries=true"
@@ -76,59 +56,63 @@
                 "-oindent_tables=false"
                 "-oindent_entries=false"
               ];
-              includes = [ "*.toml" ];
             };
-            markdown = {
-              command = "mdformat";
-              includes = [ "*.md" ];
+            yamlfmt = {
+              options = [
+                "-formatter"
+                "indent=2"
+                "-formatter"
+                "retain_line_breaks=true"
+                "-formatter"
+                "indentless_arrays=true"
+                "-formatter"
+                "eof_newline=true"
+                "-formatter"
+                "scan_folded_as_literal=true"
+              ];
+              includes = [ "*.yaml" "*.yml" ];
             };
-
           };
         };
 
-        devenv.shells.default = {
-          name = "treefmt-action";
+        devenv.shells = {
+          default = {
+            name = "treefmt-action";
 
-          devcontainer.enable = true;
-
-          dotenv = {
-            enable = true;
-            filename = ".env.local";
-          };
-
-          languages = {
-            typescript = {
-              enable = true;
+            languages = {
+              typescript = {
+                enable = true;
+              };
+              javascript = {
+                enable = true;
+                npm.enable = true;
+              };
             };
-            javascript = {
-              enable = true;
-              npm.enable = true;
-            };
-          };
 
-          pre-commit.hooks = {
-            treefmt = {
-              package = pkgs.treefmt2;
-              enable = true;
-              settings = {
-                formatters = [
-                  pkgs.nixpkgs-fmt
-                  pkgs.biome
-                  pkgs.mdformat
-                  pkgs.taplo # TOML - primarily just for the treefmt config files
-                  pkgs.typos
-                ];
+            git-hooks.hooks = {
+              treefmt = {
+                package = config.treefmt.build.wrapper;
+                enable = true;
+              };
+            };
+
+            packages = with pkgs; [
+              act
+              just
+            ];
+          };
+          ci = {
+            name = "treefmt-action-ci";
+
+            git-hooks.hooks = {
+              treefmt = {
+                package = config.treefmt.build.wrapper;
+                enable = true;
               };
             };
           };
-
-          packages = with pkgs; [
-
-            config.packages.default
-            act
-
-          ];
         };
+
       };
     };
 }
