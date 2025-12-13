@@ -90,7 +90,11 @@ jobs:
     - uses: biomejs/setup-biome@v2.2.1
     - uses: uncenter/setup-taplo@v1.0.8
     - name: Run treefmt Action from Marketplace
-      uses: isbecker/treefmt-action@v1.3.0
+      uses: isbecker/treefmt-action@v1.4.0
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         ci: true
+        # TODO: update this once we push the new version
+        # should not need to specify, and if necessary,
+        # it should be "config-file" with a hyphen
+        config_file: .treefmt.toml
