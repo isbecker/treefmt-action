@@ -20,9 +20,6 @@ jobs:
           # however, users can leave version out to get the default behavior
           version: latest
           ci: true
-        - name: Use system treefmt if available
-          version: system
-          ci: true
         - name: Specify version 2.4.0
           version: "2.4.0"
           ci: true
@@ -31,42 +28,36 @@ jobs:
           version: latest
           config-file: .treefmt.toml
         - name: Allow missing formatters
-          version: system
+          version: latest
           allow-missing-formatter: true
         - name: Run in specific working directory
-          version: system
+          version: latest
           working-dir: .
         - name: Disable cache
-          version: system
+          version: latest
           no-cache: true
         - name: Do not fail on change
-          version: system
+          version: latest
           fail-on-change: false
         - name: Run specific formatters
-          version: system
+          version: latest
           formatters: biome,taplo
         - name: Increase verbosity
-          version: system
+          version: latest
           verbose: "2"
         - name: Clear cache before run
-          version: system
+          version: latest
           clear-cache: true
         - name: Exclude certain paths
-          version: system
+          version: latest
           excludes: docs/**,tests/**
     name: ${{ matrix.test-case.name }} on ${{ matrix.os }} ${{ matrix.arch }}
     steps:
     - uses: actions/checkout@v6
-    - uses: DeterminateSystems/nix-installer-action@v21
-    - uses: DeterminateSystems/magic-nix-cache-action@v13
+    - uses: biomejs/setup-biome@v2.6.0
       with:
-        use-flakehub: false
-        use-gha-cache: true
-    - name: Install formatting tools
-      shell: bash
-      run: |
-        eval "$(nix print-dev-env --no-pure-eval --accept-flake-config .#ci)"
-        echo "PATH=$PATH" >> "$GITHUB_ENV"
+        version: "2.2.6"
+    - uses: uncenter/setup-taplo@v1.0.8
     - name: Run treefmt Action
       uses: ./
       with:
@@ -82,20 +73,36 @@ jobs:
         clear-cache: ${{ matrix.test-case.clear-cache }}
         excludes: ${{ matrix.test-case.excludes }}
         github-token: ${{ secrets.GITHUB_TOKEN }}
+  treefmt-nix-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - uses: DeterminateSystems/nix-installer-action@v21
+    - uses: DeterminateSystems/magic-nix-cache-action@v13
+      with:
+        use-flakehub: false
+        use-gha-cache: true
+    - name: Install formatting tools
+      shell: bash
+      run: |
+        eval "$(nix print-dev-env --no-pure-eval --accept-flake-config .#ci)"
+        echo "PATH=$PATH" >> "$GITHUB_ENV"
+    - name: Run treefmt Action
+      uses: ./
+      with:
+        version: system
+        ci: true
+        github-token: ${{ secrets.GITHUB_TOKEN }}
   marketplace-test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v6
     - uses: biomejs/setup-biome@v2.6.0
       with:
         version: "2.2.6"
     - uses: uncenter/setup-taplo@v1.0.8
     - name: Run treefmt Action from Marketplace
-      uses: isbecker/treefmt-action@v1.4.0
+      uses: isbecker/treefmt-action@main
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
         ci: true
-        # TODO: update this once we push the new version
-        # should not need to specify, and if necessary,
-        # it should be "config-file" with a hyphen
-        config_file: .treefmt.toml

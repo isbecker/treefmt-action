@@ -1,15 +1,15 @@
 allow-missing-formatter = true
-formatters              = ["typescript", "toml", "nix", "markdown"]
+formatters              = ["biome", "taplo", "nix", "markdown"]
 on-unmatched            = "info"
 
 
-[formatter.typescript]
+[formatter.biome]
 command  = "biome"
 options  = ["format", "--write", "--no-errors-on-unmatched"]
 includes = ["*.ts", "*.json", "*.js", "*.jsx", "*.tsx"]
 excludes = ["dist/*", "node_modules/*"]
 
-[formatter.toml]
+[formatter.taplo]
 command = "taplo"
 options = [
   "fmt",
