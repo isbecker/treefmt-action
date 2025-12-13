@@ -6,80 +6,96 @@ branding:
   color: "orange"
 inputs:
   version:
-    description: "The version of treefmt to install"
-    required: false
-    default: "latest"
-  github_token:
-    description: "GitHub token for accessing the API"
+    description: |
+      Version of treefmt to install and use.
+      Allowed values:
+        - "latest" (default): install the latest available version, determined via GitHub releases
+        - "system": use the system-provided version (no install), for usage with e.g., treefmt.nix
+        - SemVer (e.g. "1.2.3"), to install a specific version
     required: true
-  config_file:
-    description: "Path to the treefmt configuration file"
+    default: latest
+  github-token:
+    description: |
+      GitHub token for accessing the API. Used to allow this action to download
+      and install treefmt releases from GitHub.
+    required: true
+  config-file:
+    description: |
+      Path to a treefmt configuration file. If not provided, treefmt will search
+      upwards for treefmt.toml or .treefmt.toml from the working directory.
+      Set working_dir input to change the working directory.
     required: false
-    default: "treefmt.toml"
-  allow_missing_formatter:
-    description: "Do not exit with error if a configured formatter is missing"
+  allow-missing-formatter:
+    description: Do not exit with error if a configured formatter is missing
     required: false
-    default: "false"
-  working_dir:
-    description: "Run as if treefmt was started in the specified working directory instead of the current working directory"
+  working-dir:
+    description: |
+      Run as if treefmt was started in the specified working directory instead
+      of the current working directory.
     required: false
-    default: "."
   ci:
-    description: "Runs treefmt in a CI mode, enabling --no-cache, --fail-on-change and adjusting some other settings best suited to a CI use case"
-    required: false
-    default: "false"
-  no_cache:
-    description: "Ignore the evaluation cache entirely. Useful for CI"
-    required: false
-    default: "false"
-  fail_on_change:
-    description: "Exit with error if any changes were made. Useful for CI"
+    description: |
+      Runs treefmt in a CI mode, enabling --no-cache, --fail-on-change and
+      adjusting some other settings best suited to a CI use case.
+      Recommended when using treefmt in CI workflows, like this action.
     required: false
     default: "true"
+  no-cache:
+    description: Ignore the evaluation cache entirely. Useful for CI.
+    required: false
+  fail-on-change:
+    description: Exit with error if any changes were made. Useful for CI.
+    required: false
   formatters:
-    description: "Specify formatters to apply. Defaults to all formatters"
+    description: Specify formatters to apply. Defaults to all formatters.
     required: false
-    default: ""
-  tree_root:
-    description: "The root directory from which treefmt will start walking the filesystem"
+  tree-root:
+    description: |
+      The root directory from which treefmt will start walking the filesystem.
+      Defaults to the root of the current git or jujutsu worktree. If not in
+      a git or jujutsu repo, defaults to the directory containing the config file.
     required: false
-    default: ""
-  tree_root_file:
-    description: "File to search for to find the project root (if --tree_root is not passed)"
+  tree-root-file:
+    description: File to search for to find the tree root.
     required: false
-    default: ""
+  tree-root-cmd:
+    description: |
+      Command to run to find the tree root. It is parsed using shlex, to allow
+      quoting arguments that contain whitespace. If you wish to pass arguments
+      containing quotes, you should use nested quotes e.g. "'" or '"'.
+    required: false
   walk:
-    description: "The method used to traverse the files within --tree_root. Supports 'auto', 'git' or 'filesystem'"
+    description: |
+      The method used to traverse the files within tree root.
+      Allowed values:
+      - "auto": automatically choose the best method (default)
+      - "git": use git to list files
+      - "jujutsu": use jujutsu to list files
+      - "filesystem": traverse the filesystem directly
     required: false
-    default: "auto"
   verbose:
-    description: "Set the verbosity of logs"
+    description: Set the verbosity of logs.
     required: false
-    default: "0"
-  on_unmatched:
-    description: "Log paths that did not match any formatters at the specified log level"
+  quiet:
+    description: Disable all logs except errors.
     required: false
-    default: "warn"
-  clear_cache:
-    description: "Reset the evaluation cache. Use in case the cache is not precise enough"
+  on-unmatched:
+    description: |
+      Log paths that did not match any formatters at the specified log level.
+      Defaults to "info".
+      Allowed values:
+      - "debug"
+      - "info"
+      - "warn"
+      - "error"
+      - "fatal"
     required: false
-    default: "false"
-  cpu_profile:
-    description: "The file into which a CPU profile will be written"
+  clear-cache:
+    description: Reset the evaluation cache. Use in case the cache is not precise enough.
     required: false
-    default: ""
   excludes:
-    description: "Exclude files or directories matching the specified globs"
+    description: Exclude files or directories matching the specified globs.
     required: false
-    default: ""
-  stdin:
-    description: "Format the context passed in via stdin"
-    required: false
-    default: "false"
-  init:
-    description: "Create a treefmt.toml file in the current directory"
-    required: false
-    default: "false"
 runs:
-  using: "node20"
-  main: "dist/index.js"
+  using: node20
+  main: dist/index.js
