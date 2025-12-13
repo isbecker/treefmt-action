@@ -8,6 +8,7 @@ jobs:
       matrix:
         os:
         - ubuntu-latest
+        - macos-latest
         arch:
         - x86_64
         - arm64
@@ -19,9 +20,6 @@ jobs:
           # however, users can leave version out to get the default behavior
           version: latest
           ci: true
-        - name: Use system treefmt if available
-          version: system
-          ci: true
         - name: Specify version 2.4.0
           version: "2.4.0"
           ci: true
@@ -30,30 +28,53 @@ jobs:
           version: latest
           config-file: .treefmt.toml
         - name: Allow missing formatters
-          version: system
+          version: latest
           allow-missing-formatter: true
         - name: Run in specific working directory
-          version: system
+          version: latest
           working-dir: .
         - name: Disable cache
-          version: system
+          version: latest
           no-cache: true
         - name: Do not fail on change
-          version: system
+          version: latest
           fail-on-change: false
         - name: Run specific formatters
-          version: system
+          version: latest
           formatters: biome,taplo
         - name: Increase verbosity
-          version: system
+          version: latest
           verbose: "2"
         - name: Clear cache before run
-          version: system
+          version: latest
           clear-cache: true
         - name: Exclude certain paths
-          version: system
+          version: latest
           excludes: docs/**,tests/**
     name: ${{ matrix.test-case.name }} on ${{ matrix.os }} ${{ matrix.arch }}
+    steps:
+    - uses: actions/checkout@v6
+    - uses: biomejs/setup-biome@v2.6.0
+      with:
+        version: "2.2.6"
+    - uses: uncenter/setup-taplo@v1.0.8
+    - name: Run treefmt Action
+      uses: ./
+      with:
+        version: ${{ matrix.test-case.version }}
+        ci: ${{ matrix.test-case.ci }}
+        config-file: ${{ matrix.test-case.config-file }}
+        allow-missing-formatter: ${{ matrix.test-case.allow-missing-formatter }}
+        working-dir: ${{ matrix.test-case.working-dir }}
+        no-cache: ${{ matrix.test-case.no-cache }}
+        fail-on-change: ${{ matrix.test-case.fail-on-change }}
+        formatters: ${{ matrix.test-case.formatters }}
+        verbose: ${{ matrix.test-case.verbose }}
+        clear-cache: ${{ matrix.test-case.clear-cache }}
+        excludes: ${{ matrix.test-case.excludes }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+  treefmt-nix-test:
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
     - uses: DeterminateSystems/nix-installer-action@v21
@@ -69,17 +90,8 @@ jobs:
     - name: Run treefmt Action
       uses: ./
       with:
-        version: ${{ matrix.test-case.version }}
-        ci: ${{ matrix.test-case.ci }}
-        config-file: ${{ matrix.test-case.config-file }}
-        allow-missing-formatter: ${{ matrix.test-case.allow-missing-formatter }}
-        working-dir: ${{ matrix.test-case.working-dir }}
-        no-cache: ${{ matrix.test-case.no-cache }}
-        fail-on-change: ${{ matrix.test-case.fail-on-change }}
-        formatters: ${{ matrix.test-case.formatters }}
-        verbose: ${{ matrix.test-case.verbose }}
-        clear-cache: ${{ matrix.test-case.clear-cache }}
-        excludes: ${{ matrix.test-case.excludes }}
+        version: system
+        ci: true
         github-token: ${{ secrets.GITHUB_TOKEN }}
   macos-test:
     runs-on: macos-latest
