@@ -28,9 +28,9 @@ jobs:
     - uses: biomejs/setup-biome@v2.2.1
     - uses: uncenter/setup-taplo@v1.0.8
     - name: Run treefmt
-      uses: isbecker/treefmt-action@v1
+      uses: isbecker/treefmt-action@v2
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
         version: 'latest'
         ci: true
 ```
@@ -44,27 +44,31 @@ Many formatters are available as actions on the GitHub Marketplace.
 
 **Optional** The version of `treefmt` to install. Default `"latest"`.
 
-### `github_token`
+### `github-token`
 
 **Required** GitHub token for accessing the API.
 
-### `config_file`
+### `config-file`
 
 **Optional** Path to the `treefmt` configuration file. Default `"treefmt.toml"`.
 
-### `allow_missing_formatter`
+### `allow-missing-formatter`
 
 **Optional** Do not exit with error if a configured formatter is missing. Default `"false"`.
 
-### `working_directory`
+### `working-dir`
 
 **Optional** Run as if `treefmt` was started in the specified working directory instead of the current working directory. Default `"."`.
 
-### `no_cache`
+### `ci`
+
+**Optional** Run `treefmt` in CI mode, which implies `--no-cache`, `--fail-on-change`, and a few other CI-friendly settings. Default `"true"`.
+
+### `no-cache`
 
 **Optional** Ignore the evaluation cache entirely. Useful for CI. Default `"false"`.
 
-### `fail_on_change`
+### `fail-on-change`
 
 **Optional** Exit with error if any changes were made. Useful for CI. Default `"false"`.
 
@@ -72,22 +76,38 @@ Many formatters are available as actions on the GitHub Marketplace.
 
 **Optional** Specify formatters to apply. Defaults to all formatters.
 
-### `tree_root`
+### `tree-root`
 
 **Optional** The root directory from which `treefmt` will start walking the filesystem.
 
-### `tree_root_file`
+### `tree-root-file`
 
-**Optional** File to search for to find the project root (if `--tree_root` is not passed).
+**Optional** File to search for to find the project root (if `--tree-root` is not passed).
+
+### `tree-root-cmd`
+
+**Optional** Command to execute for discovering the tree root. Useful when non-standard tooling determines the project root.
 
 ### `walk`
 
-**Optional** The method used to traverse the files within `--tree_root`. Supports 'auto', 'git' or 'filesystem'. Default `"auto"`.
+**Optional** The method used to traverse the files within `--tree-root`. Supports 'auto', 'git' or 'filesystem'. Default `"auto"`.
 
 ### `verbose`
 
 **Optional** Set the verbosity of logs e.g. `-vv`. Default `"false"`.
 
-### `on_unmatched`
+### `on-unmatched`
 
-**Optional** Log paths that did not match any formatters at the specified log level. Default `"warn"`.
+**Optional** Log paths that did not match any formatters at the specified log level. Default `"info"`.
+
+### `quiet`
+
+**Optional** Disable all logs except errors.
+
+### `clear-cache`
+
+**Optional** Reset the evaluation cache; useful when you suspect the cache is stale.
+
+### `excludes`
+
+**Optional** Exclude files or directories matching the supplied glob patterns.
