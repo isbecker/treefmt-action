@@ -8,7 +8,6 @@ jobs:
       matrix:
         os:
         - ubuntu-latest
-        - macos-latest
         arch:
         - x86_64
         - arm64
@@ -82,20 +81,30 @@ jobs:
         clear-cache: ${{ matrix.test-case.clear-cache }}
         excludes: ${{ matrix.test-case.excludes }}
         github-token: ${{ secrets.GITHUB_TOKEN }}
+  macos-test:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v6
+    - uses: biomejs/setup-biome@v2.6.0
+      with:
+        version: "2.2.6"
+    - uses: uncenter/setup-taplo@v1.0.8
+    - name: Run treefmt Action
+      uses: ./
+      with:
+        version: latest
+        ci: true
+        github-token: ${{ secrets.GITHUB_TOKEN }}
   marketplace-test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v6
     - uses: biomejs/setup-biome@v2.6.0
       with:
         version: "2.2.6"
     - uses: uncenter/setup-taplo@v1.0.8
     - name: Run treefmt Action from Marketplace
-      uses: isbecker/treefmt-action@v1.4.0
+      uses: isbecker/treefmt-action@main
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         ci: true
-        # TODO: update this once we push the new version
-        # should not need to specify, and if necessary,
-        # it should be "config-file" with a hyphen
-        config_file: .treefmt.toml
