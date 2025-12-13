@@ -81,7 +81,6 @@ jobs:
         verbose: ${{ matrix.test-case.verbose }}
         clear-cache: ${{ matrix.test-case.clear-cache }}
         excludes: ${{ matrix.test-case.excludes }}
-        init: ${{ matrix.test-case.init }}
         github-token: ${{ secrets.GITHUB_TOKEN }}
   marketplace-test:
     runs-on: ubuntu-latest
