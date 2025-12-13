@@ -106,5 +106,5 @@ jobs:
     - name: Run treefmt Action from Marketplace
       uses: isbecker/treefmt-action@main
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
         ci: true
