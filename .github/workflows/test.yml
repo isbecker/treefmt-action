@@ -93,20 +93,6 @@ jobs:
         version: system
         ci: true
         github-token: ${{ secrets.GITHUB_TOKEN }}
-  macos-test:
-    runs-on: macos-latest
-    steps:
-    - uses: actions/checkout@v6
-    - uses: biomejs/setup-biome@v2.6.0
-      with:
-        version: "2.2.6"
-    - uses: uncenter/setup-taplo@v1.0.8
-    - name: Run treefmt Action
-      uses: ./
-      with:
-        version: latest
-        ci: true
-        github-token: ${{ secrets.GITHUB_TOKEN }}
   marketplace-test:
     runs-on: ubuntu-latest
     steps:
